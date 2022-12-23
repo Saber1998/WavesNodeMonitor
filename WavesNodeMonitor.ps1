@@ -21,9 +21,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Version History 1.0
+Version 1.01
 
-02JUN2022 - Initial Release
+Version History 
+
+02JUN2022 - Version 1.0 Initial Release
+23DEC2022 - Update to store user variables into a JSON file.
+            Also store Telegram token encrypted instead of in plain text.
 
 
 # Donation
@@ -39,25 +43,45 @@ Litecoin
 ltc1qjjj5kz3p3nywgn6us2akj4qpa4cf2n09wfvc8q
 
 #>
-
 $Global:ProgressPreference = 'SilentlyContinue'
+# Script Configuration Data. Check if config file exists, if not prompt user for details and create config file.
+$ConfigFilePath = "$env:USERPROFILE\WavesNodeMonitor\Config\WavesNodeMonitor.json"
+$Checkfile = Test-Path -Path $ConfigFilePath
+if ($Checkfile -eq $false) {
+    New-Item -Path $env:USERPROFILE\WavesNodeMonitor\Config -ItemType Directory | Out-Null
+    $NodeIP = Read-Host -Prompt "IP Address of Node to be monitored"
+    $NodePort = Read-Host -Prompt "Port to monitor (Default 6869)"
+    $NodeWalletAddress = Read-Host -Prompt "Enter Node Wallet Address to be monitored"
+    $TokenInput = Read-Host -Prompt "Telegram token"
+    $SavedToken = ConvertTo-SecureString $TokenInput -AsPlainText -Force 
+    $ChatID = Read-Host -Prompt "Telegram Chat ID"
+    $MonitorDetails = [PSCustomObject]@{
+        NodeIP            = $NodeIP
+        NodePort          = $NodePort
+        NodeWalletAddress = $NodeWalletAddress
+        TokenInput        = $TokenInput
+        SavedToken        = $SavedToken
+        ChatID            = $ChatID
+    }
+    $MonitorDetails | Select-Object NodeIP, NodePort, NodeWalletAddress, ChatID, @{Name = "SavedToken"; Expression = { $_.SavedToken | ConvertFrom-SecureString } } | ConvertTo-Json | Out-File $ConfigFilePath
+}
+else {
+    $ImportConfig = Get-Content -Path $ConfigFilePath | ConvertFrom-Json
+}
+Clear-Host
+$ImportConfig = Get-Content -Path $ConfigFilePath | ConvertFrom-Json
+$TelegrambotToken = ConvertTo-SecureString $ImportConfig.SavedToken
+$Telegramtoken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($TelegrambotToken))
+$ChatID = $ImportConfig.ChatID
 # Telegram Function, used to notify you if something needs manual intervention with the node being monitored.
 Function Send-Telegram {
     Param([Parameter(Mandatory = $true)][String]$Message)
-    $Telegramtoken = "TELEGRAM-BOT-TOKEN-HERE"
-    $ChatID = "TELEGRAM-CHATID-FOR-BOT-HERE"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     foreach ($ID in $ChatID) {
         Invoke-RestMethod -Method Post -Uri "https://api.telegram.org/bot$($Telegramtoken)/sendMessage?chat_id=$($ID)&text=$($Message)" -ContentType "application/json;charset=utf-8"
     }
 }
-# Node to be monitored settings IP Address, Port listening for API etc.
-[string]$NodeIP = "1.2.3.4"
-[string]$NodePort = "6869"
-# Node Wallet address used to monitor Waves Balance 
-[string]$NodeWalletAddress = "NODE-WALLET-ADDRESS-HERE"
-
-# Number of seconds script should sleep before checking the node again. I recommend 5 minutes (300 seconds) as a deafault.
+# Number of seconds script should sleep before checking the node again. I recommend 5 minutes (300 seconds) as a default.
 [int]$SleepTimer = 300
 
 $LoopCount = 0
@@ -125,9 +149,7 @@ Do {
         Write-Host "Notifying Node owner!" -ForegroundColor Red
         Send-Telegram -Message "Node is out of sync with Network, Node Height: $NodeHeight Network Height: $NetworkHeight" | Out-Null
 
-    }
-     
-    
+    }    
     $NodeVersion = Invoke-RestMethod -Method Get -Uri "http://$($NodeIP):$NodePort/node/version" -TimeoutSec 10
     $NodeVersionDisplayed = $NodeVersion.version
     $NetworkVersion = Invoke-RestMethod -Method Get -Uri "https://nodes.wavesplatform.com/node/version" -TimeoutSec 10
@@ -205,6 +227,3 @@ Do {
     Start-Sleep -Seconds $SleepTimer
 }
 While ($true)
-
-
-       
