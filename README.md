@@ -5,8 +5,10 @@ Script to monitor your Waves node to ensure uptime as well as Waves balance accu
 Windows running at least PowerShell version 3 (Will look into making it a Docker file to be able to be run without the Windows requirement at a later date.)
 
 # Configuration
-Review the configurable parameters with the script and add in the appropriate data for your node. I.E. IP Address, Port that is open and Node Wallet Address.
-Telegram section needs to have a Bot created in Telegram for it to send the notifications to. For instructions on how to create a Telegram Bot, please see 
+Follow scripts prompts to provide configuration data for node monitor. I.E. IP Address, Port that is open and Node Wallet Address.
+Telegram API token is stored encrypted in JSON file instead of in plain text.
+
+For instructions on how to create a Telegram Bot, please see 
 https://core.telegram.org/bots
 
 # Execution
