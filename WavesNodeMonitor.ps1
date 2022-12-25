@@ -64,12 +64,12 @@ if ($Checkfile -eq $false) {
         ChatID            = $ChatID
     }
     $MonitorDetails | Select-Object NodeIP, NodePort, NodeWalletAddress, ChatID, @{Name = "SavedToken"; Expression = { $_.SavedToken | ConvertFrom-SecureString } } | ConvertTo-Json | Out-File $ConfigFilePath
+    $ImportConfig = Get-Content -Path $ConfigFilePath | ConvertFrom-Json
 }
 else {
     $ImportConfig = Get-Content -Path $ConfigFilePath | ConvertFrom-Json
 }
 Clear-Host
-$ImportConfig = Get-Content -Path $ConfigFilePath | ConvertFrom-Json
 $TelegrambotToken = ConvertTo-SecureString $ImportConfig.SavedToken
 $Telegramtoken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($TelegrambotToken))
 $ChatID = $ImportConfig.ChatID
