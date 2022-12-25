@@ -68,11 +68,13 @@ if ($Checkfile -eq $false) {
 }
 else {
     $ImportConfig = Get-Content -Path $ConfigFilePath | ConvertFrom-Json
+    $TelegrambotToken = ConvertTo-SecureString $ImportConfig.SavedToken
+    $Telegramtoken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($TelegrambotToken))
+    $ChatID = $ImportConfig.ChatID
+    $NodeIP = $ImportConfig.NodeIP
+    $NodePort = $ImportConfig.NodePort
+    $NodeWalletAddress = $ImportConfig.NodeWalletAddress
 }
-Clear-Host
-$TelegrambotToken = ConvertTo-SecureString $ImportConfig.SavedToken
-$Telegramtoken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($TelegrambotToken))
-$ChatID = $ImportConfig.ChatID
 # Telegram Function, used to notify you if something needs manual intervention with the node being monitored.
 Function Send-Telegram {
     Param([Parameter(Mandatory = $true)][String]$Message)
